@@ -1,0 +1,45 @@
+-- ---------------------------------------------------
+-- 1️⃣ Create the profiles table
+-- ---------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+    full_name text,
+    email text,
+    role text DEFAULT 'user' CHECK (role IN ('user','admin')),
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+
+-- ---------------------------------------------------
+-- 2️⃣ Create trigger function to handle new users
+-- ---------------------------------------------------
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (
+    id,
+    email,
+    full_name
+  )
+  values (
+    new.id,
+    new.email,
+    new.raw_user_meta_data ->> 'full_name'  -- grab full_name from metadata if exists
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- ---------------------------------------------------
+-- 3️⃣ Create trigger on auth.users table
+-- ---------------------------------------------------
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
+
+-- Replace USER_EMAIL with the user's email update role
+UPDATE auth.users
+SET user_metadata = jsonb_set(user_metadata, '{role}', '"admin"')
+WHERE email = 'user@example.com';

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AccessAbility</string>
+    <string name="title_activity_main">AccessAbility</string>
+    <string name="package_name">com.accessability.app</string>
+    <string name="custom_url_scheme">com.accessability.app</string>
+</resources>

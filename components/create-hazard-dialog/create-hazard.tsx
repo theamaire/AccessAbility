@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import Image from "next/image";
@@ -22,11 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 
 import { Input } from "@/components/ui/input";
 import { Spinner } from "../ui/spinner";
@@ -34,18 +30,14 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { toast } from "sonner";
 
 /* MAP */
-const MapWithNoSSR = dynamic(
-  () => import("../map"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex w-full h-full items-center justify-center">
-        <Spinner />
-      </div>
-    ),
-  },
-);
-
+const MapWithNoSSR = dynamic(() => import("../map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex w-full h-full items-center justify-center">
+      <Spinner />
+    </div>
+  ),
+});
 
 const hazardSchema = z.object({
   title: z.string().min(3),
@@ -77,6 +69,10 @@ export function CreateHazard() {
 
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   /* ✅ SINGLE LOCATION ONLY */
   const [coords, setCoords] = useState<{
@@ -100,43 +96,54 @@ export function CreateHazard() {
   const canShowDetails = preview && coords;
 
   /* IMAGE */
-  const handleImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Only image files are allowed");
+      toast.error("Only image files are allowed");
       return;
+    }
+
+    setImageFile(file);
+
+    if (preview) {
+      URL.revokeObjectURL(preview);
     }
 
     const url = URL.createObjectURL(file);
     setPreview(url);
   };
 
-
   const clearForm = () => {
-    reset({
-      status: "pending",
-      title: "",
-      hazard_type: undefined as any,
-      location: "",
-      description: "",
-      latitude: 0,
-      longitude: 0,
-    });
+  reset({
+    status: "pending",
+    title: "",
+    hazard_type: undefined as any,
+    location: "",
+    description: "",
+    latitude: 0,
+    longitude: 0,
+  });
 
-    setPreview(null);
-    setCoords(null);
+  if (preview) {
+    URL.revokeObjectURL(preview);
+  }
 
-    const fileInput =
-      document.querySelector<HTMLInputElement>("#image");
+  setPreview(null);
+  setImageFile(null);
+  setCoords(null);
 
-    if (fileInput) fileInput.value = "";
-  };
+  if (cameraInputRef.current) {
+    cameraInputRef.current.value = "";
+  }
 
- 
+  if (galleryInputRef.current) {
+    galleryInputRef.current.value = "";
+  }
+};
+
   const onSubmit = async (data: HazardFormValues) => {
     try {
       const supabase = getSupabaseBrowserClient();
@@ -147,53 +154,43 @@ export function CreateHazard() {
 
       if (!user) throw new Error("User not authenticated");
 
-      const fileInput =
-        document.querySelector<HTMLInputElement>(
-          "#image",
-        )?.files?.[0];
-
       let imageUrl: string | null = null;
 
-      if (fileInput) {
-        const fileName = `${user.id}/${Date.now()}-${fileInput.name}`;
+      if (imageFile) {
+        const fileName = `${user.id}/${Date.now()}-${imageFile.name}`;
 
-        const { error: uploadError } =
-          await supabase.storage
-            .from("images")
-            .upload(fileName, fileInput);
+
+        const { error: uploadError } = await supabase.storage
+          .from("images")
+          .upload(fileName, imageFile);
 
         if (uploadError) throw uploadError;
 
-        const { data: publicUrlData } =
-          supabase.storage
-            .from("images")
-            .getPublicUrl(fileName);
+        const { data: publicUrlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(fileName);
 
         imageUrl = publicUrlData.publicUrl;
       }
 
-    
-      const { data: hazard, error } =
-        await supabase
-          .from("hazards")
-          .insert({
-            ...data,
-            profile_id: user.id,
-            latitude: coords?.lat ?? null,
-            longitude: coords?.lng ?? null,
-          } as never)
-          .select()
-          .single();
+      const { data: hazard, error } = await supabase
+        .from("hazards")
+        .insert({
+          ...data,
+          profile_id: user.id,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+        } as never)
+        .select()
+        .single();
 
       if (error) throw error;
 
-    
       if (imageUrl) {
-        const { error: imageError } =
-          await supabase.from("images").insert({
-            hazard_id: hazard.hazard_id,
-            url: imageUrl,
-          });
+        const { error: imageError } = await supabase.from("images").insert({
+          hazard_id: hazard.hazard_id,
+          url: imageUrl,
+        });
 
         if (imageError) throw imageError;
       }
@@ -210,11 +207,7 @@ export function CreateHazard() {
     }
   };
 
-
-  const handleCoordsChange = (value: {
-    lat: number;
-    lng: number;
-  }) => {
+  const handleCoordsChange = (value: { lat: number; lng: number }) => {
     const single = {
       lat: value.lat,
       lng: value.lng,
@@ -249,24 +242,49 @@ export function CreateHazard() {
           <div className="flex-1 overflow-y-auto pr-2">
             <FieldGroup className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-           
                 <Field>
                   <FieldLabel>Image</FieldLabel>
 
-                  <Input
-                    id="image"
+                  <input
+                    ref={cameraInputRef}
                     type="file"
                     accept="image/*"
                     capture="environment"
+                    className="hidden"
                     onChange={handleImageChange}
                   />
 
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      📷 Take Photo
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => galleryInputRef.current?.click()}
+                    >
+                      🖼️ Upload Image
+                    </Button>
+                  </div>
+
                   {preview && (
-                    <div className="relative mt-2 w-full h-48 rounded-md border overflow-hidden">
+                    <div className="relative mt-3 w-full h-48 rounded-md border overflow-hidden">
                       <Image
                         src={preview}
-                        alt="preview"
+                        alt="Preview"
                         fill
                         className="object-cover"
                         unoptimized
@@ -275,7 +293,6 @@ export function CreateHazard() {
                   )}
                 </Field>
 
-               
                 <Field>
                   <FieldLabel>Pick ONE Location</FieldLabel>
 
@@ -296,10 +313,8 @@ export function CreateHazard() {
                 </Field>
               </div>
 
-           
               {canShowDetails && (
                 <div className="space-y-4 border-t pt-4">
-
                   <Field>
                     <FieldLabel>Title</FieldLabel>
                     <Input {...register("title")} />

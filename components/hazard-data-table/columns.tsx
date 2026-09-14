@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -81,6 +81,8 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [preview, setPreview] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     const fetchImage = async () => {
@@ -103,6 +105,26 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
 
     fetchImage();
   }, [hazard.hazard_id]);
+
+  React.useEffect(() => {
+    const fetchUserRole = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("profile_id", user.id)
+        .single();
+
+      setIsAdmin(data?.role === "admin");
+    };
+
+    fetchUserRole();
+  }, []);
 
   const [coords, setCoords] = useState<{
     lat: number;
@@ -138,6 +160,8 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
     },
   });
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const status = watch("status");
   const startDate = watch("started_at");
   const resolvedDate = watch("resolved_at");
@@ -146,7 +170,13 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are allowed");
+      return;
+    }
 
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
@@ -196,6 +226,15 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
         return;
       }
 
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error("User not authenticated");
+        return;
+      }
+
       if (
         data.status === "resolved" &&
         (!data.started_at || !data.resolved_at)
@@ -212,10 +251,14 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
         .eq("hazard_id", hazard.hazard_id)
         .maybeSingle();
 
-      const fileInput =
-        document.querySelector<HTMLInputElement>('input[type="file"]');
+      const cameraFile = cameraInputRef.current?.files?.[0];
+      const galleryFile = galleryInputRef.current?.files?.[0];
 
-      const file = fileInput?.files?.[0];
+      const file = cameraFile ?? galleryFile;
+
+      if (!file) {
+        console.log("No image selected");
+      }
 
       if (file) {
         let oldFileName: string | null = null;
@@ -226,7 +269,7 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
           oldFileName = urlParts[urlParts.length - 1];
         }
 
-        const fileName = `${Date.now()}-${file.name}`;
+        const fileName = `${user.id}/${Date.now()}-${file.name}`;
 
         const { error: uploadError } = await supabase.storage
           .from("images")
@@ -449,12 +492,44 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
                     <Field>
                       <FieldLabel>Image</FieldLabel>
 
-                      <Input
+                      {/* Hidden Camera Input */}
+                      <input
+                        ref={cameraInputRef}
                         type="file"
                         accept="image/*"
+                        capture="environment"
+                        className="hidden"
                         onChange={handleImageChange}
-                        disabled={!isEditing}
                       />
+
+                      {/* Hidden Gallery Input */}
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                      />
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!isEditing}
+                          onClick={() => cameraInputRef.current?.click()}
+                        >
+                          📷 Take Photo
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!isEditing}
+                          onClick={() => galleryInputRef.current?.click()}
+                        >
+                          🖼️ Upload Image
+                        </Button>
+                      </div>
 
                       {preview && (
                         <>
@@ -485,7 +560,6 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
 
                       <div className="h-64 w-full border rounded-md overflow-hidden">
                         <MapWithNoSSR
-                       
                           coords={coords}
                           setCoords={isEditing ? handleCoordsChange : undefined}
                           clickable={true}
@@ -540,7 +614,7 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
 
                       <select
                         {...register("status")}
-                        disabled={!isEditing}
+                        disabled={!isEditing || !isAdmin}
                         className="w-full border p-2 rounded-md disabled:opacity-70"
                       >
                         <option value="pending">Pending</option>

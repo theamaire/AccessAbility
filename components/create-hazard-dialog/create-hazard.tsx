@@ -316,7 +316,7 @@ export function CreateHazard() {
               {canShowDetails && (
                 <div className="space-y-4 border-t pt-4">
                   <Field>
-                    <FieldLabel>Title</FieldLabel>
+                    <FieldLabel>Hazard Name</FieldLabel>
                     <Input {...register("title")} />
                   </Field>
 

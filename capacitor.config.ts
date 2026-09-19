@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "AccessAbility",
   webDir: "public",
   server: {
-    url: "https://capstone-map-fajovs-projects.vercel.app",
+    url: "https://access-ability-seven.vercel.app",
     cleartext: true,
   },
   plugins: {

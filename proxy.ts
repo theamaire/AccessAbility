@@ -14,9 +14,21 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if(!user){
+    return;
+  }
+
+  const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("profile_id", user.id)
+          .single();
+
+  
+
   const pathname = request.nextUrl.pathname;
 
-   if (!user && pathname.startsWith("/admin")) {
+  if (!user && pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -24,9 +36,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-
   if (user && (pathname === "/login" || pathname === "/sign-up")) {
-    const role = user.user_metadata?.role;
+    
+    const role = profile?.role;
 
     if (role === "admin") {
       return NextResponse.redirect(new URL("/admin", request.url));
@@ -35,15 +47,21 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-
-  if (user && pathname.startsWith("/admin") && user.user_metadata?.role !== "admin") {
+  if (
+    user &&
+    pathname.startsWith("/admin") &&
+    profile?.role !== "admin"
+  ) {
     return NextResponse.redirect(new URL("/user", request.url));
   }
 
-  if (user && pathname.startsWith("/user") && user.user_metadata?.role !== "user") {
+  if (
+    user &&
+    pathname.startsWith("/user") &&
+    profile?.role !== "user"
+  ) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
- 
-  return response
+  return response;
 }

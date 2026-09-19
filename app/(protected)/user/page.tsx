@@ -2,7 +2,7 @@ import { UserSectionCards } from "@/components/user-section-cards";
 
 
 
-export default async function AdminPage() {
+export default async function UserPage() {
  
 
   return (

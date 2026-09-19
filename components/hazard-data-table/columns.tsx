@@ -49,7 +49,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "../ui/field";
 
 const hazardUpdateSchema = z.object({
-  title: z.string().min(3, "Title is required"),
+  title: z.string().min(3, "Hazard is required"),
   location: z.string().min(3, "Location is required"),
   hazard_type: z.enum([
     "Electrical",
@@ -569,7 +569,7 @@ function ActionsCell({ hazard }: { hazard: Hazard }) {
                   </div>
 
                   <Field>
-                    <FieldLabel>Title</FieldLabel>
+                    <FieldLabel>Hazard Name</FieldLabel>
 
                     <Input {...register("title")} disabled={!isEditing} />
                   </Field>
@@ -787,7 +787,7 @@ export const hazardColumns: ColumnDef<Hazard>[] = [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Title
+        Hazard Name
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),

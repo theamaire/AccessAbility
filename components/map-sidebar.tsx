@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-
+import icon from "../assets/icon.png";
 import {
   Sidebar,
   SidebarContent,
@@ -141,8 +141,9 @@ export function MapSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/location-list">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg ">
+                  <Image src={icon} width={32} height={32} alt="AccessAbility" className="size-full object-contain" />
+                 
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">AccessAbility</span>

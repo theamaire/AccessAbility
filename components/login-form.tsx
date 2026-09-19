@@ -1,7 +1,8 @@
-'use client'
+"use client";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
 import {
   Card,
   CardContent,
@@ -28,16 +29,16 @@ import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-
 type LoginFormProps = React.ComponentProps<typeof Card>;
 
 export function LoginForm({ ...props }: LoginFormProps) {
-  
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -75,6 +76,7 @@ export function LoginForm({ ...props }: LoginFormProps) {
 
   return (
     <div className={cn("flex flex-col gap-6", props.className)} {...props}>
+     
       <Card>
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>
@@ -111,7 +113,10 @@ export function LoginForm({ ...props }: LoginFormProps) {
               </Field>
 
               <Field>
-                <Button type="submit" disabled={isLoading}> {isLoading ? <Spinner className="size-4" /> : "Login"}</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {" "}
+                  {isLoading ? <Spinner className="size-4" /> : "Login"}
+                </Button>
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <a href="/sign-up">Sign up</a>
                 </FieldDescription>
@@ -121,7 +126,9 @@ export function LoginForm({ ...props }: LoginFormProps) {
               </Field>
             </FieldGroup>
 
-            {status && <p className="text-center text-sm mt-2  text-red-500">{status}</p>}
+            {status && (
+              <p className="text-center text-sm mt-2  text-red-500">{status}</p>
+            )}
           </form>
         </CardContent>
       </Card>

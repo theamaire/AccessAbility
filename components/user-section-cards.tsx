@@ -1,4 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import pendingIcon from "@/assets/file.png";
+import approvedIcon from "@/assets/stamp.png";
+import underMaintenanceIcon from "@/assets/under-construction-sign.png";
+import resolvedIcon from "@/assets/error.png";
+
 
 import {
   Card,
@@ -7,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Image from "next/image";
 
 type DashboardStats = {
   pending: number;
@@ -78,37 +84,90 @@ export async function UserSectionCards() {
   const stats = await getStats();
 
   return (
-    <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+    <div className="flex flex-col gap-4">
+      <h1 className="text-lg font-semibold">Hazards</h1>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="w-full @container/card">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <div>
+        
+              <Image
+                src={pendingIcon}
+                width={32}
+                height={32}
+                alt="Pending Request"
+              />
+            </div>
+            <div>
+              <CardDescription>Pending Request</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {stats.pending}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
 
-       <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Pending Request</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{stats.pending}</CardTitle>
-        </CardHeader>
-      </Card>
+        <Card className="w-full @container/card">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <div>
+              <Image
+                src={approvedIcon}
+                width={32}
+                height={32}
+                alt="Approved Request"
+              />
+            </div>
+            <div>
+              <CardDescription>Approved Request</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {stats.approved}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Approved Request</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{stats.approved}</CardTitle>
-        </CardHeader>
-      </Card>
+    
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Under-Maintenance Hazards</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{stats.underMaintenance}</CardTitle>
-        </CardHeader>
-      </Card>
+        <Card className="w-full @container/card">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <div>
+              <Image
+                src={underMaintenanceIcon}
+                width={32}
+                height={32}
+                alt="Under-Maintenance Hazards"
+              />
+            </div>
+            <div>
+              <CardDescription>Under-Maintenance</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {stats.underMaintenance}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
 
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Resolved Hazards</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{stats.resolved}</CardTitle>
-        </CardHeader>
-      </Card>
-
-
+        <Card className="w-full @container/card">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <div>
+              <Image
+                src={resolvedIcon}
+                width={32}
+                height={32}
+                alt="Resolved Hazards"
+              />
+            </div>
+            <div>
+              <CardDescription>Resolved Hazards</CardDescription>
+              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                {stats.resolved}
+              </CardTitle>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+   
+      
     </div>
   );
 }

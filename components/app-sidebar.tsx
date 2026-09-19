@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-
+import icon from "@/assets/icon.png";
 import {
   Bot,
   Command,
   Settings2,
   SquareTerminal,
   Building2,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavAdmin } from "@/components/nav-admin"
-import { NavUser } from "@/components/nav-user"
-import { NavProfile } from "@/components/nav-profile"
+import { NavAdmin } from "@/components/nav-admin";
+import { NavUser } from "@/components/nav-user";
+import { NavProfile } from "@/components/nav-profile";
 import {
   Sidebar,
   SidebarContent,
@@ -20,10 +20,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { useEffect, useState } from "react"
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
-import { CreateHazard } from "./create-hazard-dialog/create-hazard"
+} from "@/components/ui/sidebar";
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { CreateHazard } from "./create-hazard-dialog/create-hazard";
+import Image from "next/image";
 
 const data = {
   user: {
@@ -32,7 +33,7 @@ const data = {
     avatar: "",
   },
   adminnavigation: [
-     {
+    {
       title: "Dashboard",
       url: "/admin",
       icon: SquareTerminal,
@@ -67,21 +68,19 @@ const data = {
       url: "/admin/user-management",
       icon: Bot,
     },
-  
   ],
   usernavigation: [
     {
       title: "User Dashboard",
       url: "/user",
       icon: Settings2,
-      
     },
     {
       title: "Hazard Request",
       url: "#",
       icon: Building2,
       isActive: true,
-         items: [
+      items: [
         {
           title: "Pending",
           url: "/user/hazard/pending",
@@ -101,31 +100,45 @@ const data = {
       ],
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const supabase = getSupabaseBrowserClient();
+  const [currentUser, setcurrentUser] = useState<{
+    name?: string;
+    email?: string;
+    avatar?: string;
+    role?: string;
+  } | null>(null);
 
-    const supabase = getSupabaseBrowserClient();
-    const [user, setUser] = useState<{ name?: string; email?: string; avatar?: string; role?: string } | null>(null);
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    useEffect(() => {
-        const fetchUser = async () => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("profile_id", user.id)
+          .single();
 
-        if (user) {
-            setUser({
-            name: user.user_metadata?.full_name || "",
-            email: user.email || "",
-            avatar: user.user_metadata?.avatar_url || "",
-            role: user.user_metadata?.role || "",
-            });
-        }
-        };
+        setcurrentUser({
+          name: profile?.full_name || "",
+          email: profile?.email || "",
+          avatar: user.user_metadata?.avatar_url || "",
+          role: profile?.role || "",
+        });
+
+
+      }
+    };
 
     fetchUser();
   }, [supabase]);
+
+
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -134,8 +147,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/location-list">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg ">
+                  <Image
+                    src={icon}
+                    width={32}
+                    height={32}
+                    alt="AccessAbility"
+                    className="size-full object-contain"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">AccessAbility</span>
@@ -147,15 +166,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {user?.role == "admin" && <NavAdmin adminNav={data.adminnavigation}/>}
-        {user?.role == "user" && <NavUser userNav={data.usernavigation} />}
-        
-    
+        {currentUser?.role == "admin" && (
+          <NavAdmin adminNav={data.adminnavigation} />
+        )}
+        {currentUser?.role == "user" && (
+          <NavUser userNav={data.usernavigation} />
+        )}
       </SidebarContent>
       <SidebarFooter>
-        <CreateHazard/>
-        <NavProfile user={user || {}} />
+        <CreateHazard />
+        <NavProfile user={currentUser || {}} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

@@ -819,7 +819,7 @@ export const hazardColumns: ColumnDef<Hazard>[] = [
           minute: "2-digit",
           hour12: true,
         })
-        .replace(",", " at");
+        .replace(/, (?=\d{1,2}:)/, " at ");
     },
   },
   {

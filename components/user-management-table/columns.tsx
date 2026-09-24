@@ -311,7 +311,7 @@ export const profileColumns: ColumnDef<Profile>[] = [
           minute: "2-digit",
           hour12: true,
         })
-        .replace(",", " at");
+        .replace(/, (?=\d{1,2}:)/, " at ");
     },
   },
   {
